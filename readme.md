@@ -1,7 +1,7 @@
 # 🌟 NoPixel v5 Inspired Clothing (`illenium-appearance`)
 
 Modern FiveM clothing & player customization menu inspired by **NoPixel 5.0 (v5)**.  
-Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!
+Redesign by **Haaasib**. Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!
 
 ---
 
@@ -18,7 +18,7 @@ Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!
 
 ---
 
-## ⚡ Quick Install
+## ⚡ Quick Install & Customization
 
 1. Place `illenium-appearance` into your resources directory.
 2. Add to your `server.cfg`:
@@ -29,10 +29,13 @@ ensure illenium-appearance
 ```
 3. Restart server. (Database tables are automatically created on startup).
 
+> 🎨 **UI Customization**: Full source code is included under the `/web` folder (React + TypeScript + TailwindCSS). Feel free to edit, rebuild (`npm run build`), and customize the UI however you like!
+
 ---
 
 ## 💬 Links & Support
 
 - 💬 **Discord Support**: [https://discord.gg/kj3bWdD7uK](https://discord.gg/kj3bWdD7uK)
 - 🛒 **Store**: [https://tebex.haaasib.dev/](https://tebex.haaasib.dev/)
-- 📦 **Base Repo**: [iLLeniumStudios Base](https://github.com/iLLeniumStudios/illenium-appearance)
+- 📦 **GitHub Repository**: [https://github.com/Haaasib/illenium-appearance](https://github.com/Haaasib/illenium-appearance)
+- 📦 **Base Script**: [iLLeniumStudios Base](https://github.com/iLLeniumStudios/illenium-appearance)

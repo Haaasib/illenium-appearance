@@ -1,9 +1,9 @@
 fx_version "cerulean"
 game "gta5"
 
-author "snakewiz & iLLeniumStudios"
-description "A flexible player customization script for FiveM servers."
-repository "https://github.com/iLLeniumStudios/illenium-appearance"
+author "snakewiz & iLLeniumStudios (Redesign by Haaasib)"
+description "NoPixel v5 inspired clothing & player customization menu for FiveM servers."
+repository "https://github.com/Haaasib/illenium-appearance"
 version "v5.7.0"
 
 lua54 "yes"
