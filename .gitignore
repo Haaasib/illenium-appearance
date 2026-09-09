@@ -1,6 +1,5 @@
 node_modules
 web/node_modules
-web/dist/assets/*.map
 .DS_Store
 .vscode
 .idea
