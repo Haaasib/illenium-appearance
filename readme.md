@@ -1,6 +1,6 @@
-# 🌟 NoPixel v5 Inspired Clothing (`illenium-appearance`)
+# 🌟 NoPixel Inspired Clothing (`illenium-appearance`)
 
-Modern FiveM clothing & player customization menu inspired by **NoPixel 5.0 (v5)**.  
+Modern FiveM clothing & player customization menu inspired by **NoPixel**.  
 Redesign by **Haaasib**. Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!
 
 ---
