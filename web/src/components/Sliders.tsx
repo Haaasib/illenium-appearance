@@ -5,10 +5,10 @@ import { ClothingPrices, getItemPrice } from '../utils';
 
 const FEATURE_NAMES: Record<string, string> = {
   // Head Blend
-  'shapeFirst': 'Mother Face Shape',
-  'shapeSecond': 'Father Face Shape',
-  'skinFirst': 'Mother Skin Tone',
-  'skinSecond': 'Father Skin Tone',
+  'shapeFirst': 'Father Face Shape',
+  'shapeSecond': 'Mother Face Shape',
+  'skinFirst': 'Father Skin Tone',
+  'skinSecond': 'Mother Skin Tone',
   'shapeMix': 'Face Shape Mix',
   'skinMix': 'Skin Tone Mix',
   // Nose
@@ -76,12 +76,12 @@ const FEATURE_LABELS: Record<string, { title: string; minLabel: string; maxLabel
   'chinHole': { title: 'CHIN HOLE', minLabel: 'NONE', maxLabel: 'DEEP' },
   'neckThickness': { title: 'NECK THICKNESS', minLabel: 'THIN', maxLabel: 'THICK' },
   // Head Blend
-  'shapeFirst': { title: 'MOTHER FACE SHAPE', minLabel: 'BENJAMIN', maxLabel: 'HANNAH' },
-  'shapeSecond': { title: 'FATHER FACE SHAPE', minLabel: 'BENJAMIN', maxLabel: 'HANNAH' },
-  'skinFirst': { title: 'MOTHER SKIN TONE', minLabel: 'LIGHT', maxLabel: 'DARK' },
-  'skinSecond': { title: 'FATHER SKIN TONE', minLabel: 'LIGHT', maxLabel: 'DARK' },
-  'shapeMix': { title: 'FACE SHAPE MIX', minLabel: 'MOTHER', maxLabel: 'FATHER' },
-  'skinMix': { title: 'SKIN TONE MIX', minLabel: 'MOTHER', maxLabel: 'FATHER' },
+  'shapeFirst': { title: 'FATHER FACE SHAPE', minLabel: 'BENJAMIN', maxLabel: 'HANNAH' },
+  'shapeSecond': { title: 'MOTHER FACE SHAPE', minLabel: 'BENJAMIN', maxLabel: 'HANNAH' },
+  'skinFirst': { title: 'FATHER SKIN TONE', minLabel: 'LIGHT', maxLabel: 'DARK' },
+  'skinSecond': { title: 'MOTHER SKIN TONE', minLabel: 'LIGHT', maxLabel: 'DARK' },
+  'shapeMix': { title: 'FACE SHAPE MIX', minLabel: 'FATHER', maxLabel: 'MOTHER' },
+  'skinMix': { title: 'SKIN TONE MIX', minLabel: 'FATHER', maxLabel: 'MOTHER' },
   // Overlays
   'blemishes': { title: 'BLEMISHES', minLabel: 'NONE', maxLabel: 'MAX' },
   'beard': { title: 'FACIAL HAIR', minLabel: 'CLEAN', maxLabel: 'FULL' },
@@ -177,10 +177,10 @@ export default function Sliders({
   const handleHeadBlendChange = (key: string, val: number) => {
     const currentBlend = appearanceData?.headBlend || {
       shapeFirst: 21,
-      shapeSecond: 0,
+      shapeSecond: 22,
       shapeThird: 0,
       skinFirst: 21,
-      skinSecond: 0,
+      skinSecond: 22,
       skinThird: 0,
       shapeMix: 0.5,
       skinMix: 0.5,
@@ -337,12 +337,12 @@ export default function Sliders({
                value = appearanceData?.faceFeatures?.[key] || 0;
             } else if (mainTab === 'FACE & BODY' && activeCategory === 'HEAD BLEND') {
                isHeadBlend = true;
-               value = appearanceData?.headBlend?.[key] ?? (key.includes('Mix') ? 0.5 : 0);
+               value = appearanceData?.headBlend?.[key] ?? (key.includes('Mix') ? 0.5 : 21);
                if (key.includes('Mix')) {
                  min = 0.0; max = 1.0; step = 0.01;
                } else {
                  isHeadBlendShapeOrSkin = true;
-                 min = 1; max = 46; step = 1;
+                 min = 1; max = 45; step = 1;
                }
             } else if (mainTab === 'OVERLAYS' || mainTab === 'HAIR' || ['beard', 'eyebrows', 'chestHair', 'blemishes', 'ageing', 'complexion', 'sunDamage', 'moleAndFreckles', 'bodyBlemishes', 'makeUp', 'blush', 'lipstick'].includes(key)) {
                isOverlay = true;
@@ -350,7 +350,7 @@ export default function Sliders({
                min = 0; max = 25; step = 1;
             }
 
-            const currentDisplayVal = isHeadBlendShapeOrSkin ? Math.round(value) + 1 : value;
+            const currentDisplayVal = isHeadBlendShapeOrSkin ? Math.max(1, Math.round(value)) : value;
 
             const handleUpdate = (displayVal: number) => {
               const clampedDisplay = Math.min(Math.max(displayVal, min), max);
@@ -364,8 +364,7 @@ export default function Sliders({
                 });
               } else if (isHeadBlend) {
                 if (isHeadBlendShapeOrSkin) {
-                  const internalVal = Math.round(clampedDisplay) - 1;
-                  handleHeadBlendChange(key, internalVal);
+                  handleHeadBlendChange(key, Math.round(clampedDisplay));
                 } else {
                   const finalVal = parseFloat(clampedDisplay.toFixed(2));
                   handleHeadBlendChange(key, finalVal);

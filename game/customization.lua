@@ -275,11 +275,11 @@ local function getAppearanceSettings()
 
     local headBlend = {
         shapeFirst = {
-            min = 0,
+            min = 1,
             max = 45
         },
         shapeSecond = {
-            min = 0,
+            min = 1,
             max = 45
         },
         shapeThird = {
@@ -287,11 +287,11 @@ local function getAppearanceSettings()
             max = 45
         },
         skinFirst = {
-            min = 0,
+            min = 1,
             max = 45
         },
         skinSecond = {
-            min = 0,
+            min = 1,
             max = 45
         },
         skinThird = {

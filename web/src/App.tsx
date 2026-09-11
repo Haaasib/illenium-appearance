@@ -667,6 +667,9 @@ export default function App() {
         }
         return { ...prev, props };
       } else if (itemType === 'ped_model') {
+        if (item.headBlend || item.components) {
+          return item;
+        }
         return { ...prev, model: item.model || item.name };
       } else if (itemType === 'hair') {
         const hair = {
@@ -802,6 +805,15 @@ export default function App() {
               gender={gender}
               appearanceData={appearanceData}
               onItemSelect={handleItemSelect}
+              onModelApplied={(res) => {
+                if (res?.appearanceData) {
+                  setAppearanceData(res.appearanceData);
+                  setSelectedItem({ model: res.appearanceData.model });
+                }
+                if (res?.appearanceSettings) {
+                  setAppearanceSettings(res.appearanceSettings);
+                }
+              }}
               isFree={isFree}
               prices={prices}
               images={images}

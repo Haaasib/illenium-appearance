@@ -121,6 +121,7 @@ export default function Grid({
   gender,
   appearanceData,
   onItemSelect,
+  onModelApplied,
   isFree,
   prices,
   images
@@ -136,6 +137,7 @@ export default function Grid({
   gender?: 'male' | 'female';
   appearanceData?: any;
   onItemSelect?: (item: any) => void;
+  onModelApplied?: (res: { appearanceData?: any; appearanceSettings?: any }) => void;
   isFree?: boolean;
   prices?: ClothingPrices;
   images?: ClothingImages;
@@ -160,12 +162,14 @@ export default function Grid({
       const targetItem = itemsToRender[drawable] || itemsToRender.find(it => it.drawable === drawable);
       const modelName = targetItem?.model || targetItem?.name;
       if (modelName) {
+        if (onItemSelect) onItemSelect({ model: modelName, name: modelName });
         Nui.post('appearance_change_model', modelName).then((res: any) => {
-          if (res?.appearanceData && onItemSelect) {
+          if (res && onModelApplied) {
+            onModelApplied(res);
+          } else if (res?.appearanceData && onItemSelect) {
             onItemSelect(res.appearanceData);
           }
         });
-        if (onItemSelect) onItemSelect(targetItem);
       }
       return;
     }

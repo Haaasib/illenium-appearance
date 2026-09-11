@@ -1,6 +1,29 @@
 local hashesComputed = false
 local PED_TATTOOS = {}
 local pedModelsByHash = {}
+local cachedHeadBlend = nil
+local DEFAULT_MALE_BLEND = {
+    shapeFirst = 21,
+    shapeSecond = 22,
+    shapeThird = 0,
+    skinFirst = 21,
+    skinSecond = 22,
+    skinThird = 0,
+    shapeMix = 0.5,
+    skinMix = 0.5,
+    thirdMix = 0.0
+}
+local DEFAULT_FEMALE_BLEND = {
+    shapeFirst = 45,
+    shapeSecond = 21,
+    shapeThird = 0,
+    skinFirst = 20,
+    skinSecond = 15,
+    skinThird = 0,
+    shapeMix = 0.3,
+    skinMix = 0.1,
+    thirdMix = 0.0
+}
 
 local function tofloat(num)
     if not num then return 0.0 end
@@ -10,6 +33,70 @@ end
 local function isPedFreemodeModel(ped)
     local model = GetEntityModel(ped)
     return model == `mp_m_freemode_01` or model == `mp_f_freemode_01`
+end
+
+local function copyHeadBlend(blend)
+    return {
+        shapeFirst = blend.shapeFirst,
+        shapeSecond = blend.shapeSecond,
+        shapeThird = blend.shapeThird,
+        skinFirst = blend.skinFirst,
+        skinSecond = blend.skinSecond,
+        skinThird = blend.skinThird,
+        shapeMix = blend.shapeMix,
+        skinMix = blend.skinMix,
+        thirdMix = blend.thirdMix
+    }
+end
+
+local function normalizeParentId(id, fallback)
+    id = tonumber(id)
+    if id == nil then return fallback end
+    id = math.floor(id)
+    if id < 1 then return 1 end
+    return id
+end
+
+local function clampMix(value, fallback)
+    local mix = tonumber(value)
+    if mix == nil then mix = fallback end
+    if mix < 0.0 then return 0.0 end
+    if mix > 1.0 then return 1.0 end
+    return mix + 0.0
+end
+
+local function applyHeadBlendData(ped, headBlend)
+    if not headBlend or not ped or not DoesEntityExist(ped) or not isPedFreemodeModel(ped) then
+        return
+    end
+    local shapeFirst = normalizeParentId(headBlend.shapeFirst, 21)
+    local shapeSecond = normalizeParentId(headBlend.shapeSecond, 22)
+    local shapeThird = tonumber(headBlend.shapeThird) or 0
+    local skinFirst = normalizeParentId(headBlend.skinFirst, 21)
+    local skinSecond = normalizeParentId(headBlend.skinSecond, 22)
+    local skinThird = tonumber(headBlend.skinThird) or 0
+    local shapeMix = clampMix(headBlend.shapeMix, 0.5)
+    local skinMix = clampMix(headBlend.skinMix, 0.5)
+    local thirdMix = clampMix(headBlend.thirdMix, 0.0)
+    SetPedHeadBlendData(ped, shapeFirst, shapeSecond, shapeThird, skinFirst, skinSecond, skinThird, shapeMix, skinMix, thirdMix, false)
+    local timeout = GetGameTimer() + 1000
+    while not HasPedHeadBlendFinished(ped) and GetGameTimer() < timeout do
+        Wait(0)
+    end
+    FinalizeHeadBlend(ped)
+    if ped == cache.ped then
+        cachedHeadBlend = {
+            shapeFirst = shapeFirst,
+            shapeSecond = shapeSecond,
+            shapeThird = shapeThird,
+            skinFirst = skinFirst,
+            skinSecond = skinSecond,
+            skinThird = skinThird,
+            shapeMix = shapeMix,
+            skinMix = skinMix,
+            thirdMix = thirdMix
+        }
+    end
 end
 
 local function computePedModelsByHash()
@@ -77,27 +164,20 @@ end
 ---{ shapeFirst, shapeSecond, shapeThird, skinFirst, skinSecond, skinThird, shapeMix, skinMix, thirdMix }
 ---```
 local function getPedHeadBlend(ped)
-    -- GET_PED_HEAD_BLEND_DATA
-    local shapeFirst, shapeSecond, shapeThird, skinFirst, skinSecond, skinThird, shapeMix, skinMix, thirdMix = Citizen.InvokeNative(0x2746BD9D88C5C5D0, ped, Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueFloatInitialized(0), Citizen.PointerValueFloatInitialized(0), Citizen.PointerValueFloatInitialized(0))
-
-    shapeMix = round(shapeMix or 0, 2)
-    if shapeMix > 1 then shapeMix = 1 end
-
-    skinMix = round(skinMix or 0, 2)
-    if skinMix > 1 then skinMix = 1 end
-
-    thirdMix = round(thirdMix or 0, 2)
-    if thirdMix > 1 then thirdMix = 1 end
-
-
-    if isPedFreemodeModel(ped) and (shapeFirst == 0 and shapeSecond == 0) then
-        shapeFirst = 21
-        shapeSecond = 0
-        skinFirst = 21
-        skinSecond = 0
+    if cachedHeadBlend and ped == cache.ped then
+        return copyHeadBlend(cachedHeadBlend)
     end
-
-    return {
+    local shapeFirst, shapeSecond, shapeThird, skinFirst, skinSecond, skinThird, shapeMix, skinMix, thirdMix = Citizen.InvokeNative(0x2746BD9D88C5C5D0, ped, Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueIntInitialized(0), Citizen.PointerValueFloatInitialized(0), Citizen.PointerValueFloatInitialized(0), Citizen.PointerValueFloatInitialized(0))
+    shapeFirst = normalizeParentId(shapeFirst, 21)
+    shapeSecond = normalizeParentId(shapeSecond, 22)
+    shapeThird = tonumber(shapeThird) or 0
+    skinFirst = normalizeParentId(skinFirst, 21)
+    skinSecond = normalizeParentId(skinSecond, 22)
+    skinThird = tonumber(skinThird) or 0
+    shapeMix = clampMix(round(shapeMix or 0.5, 2), 0.5)
+    skinMix = clampMix(round(skinMix or 0.5, 2), 0.5)
+    thirdMix = clampMix(round(thirdMix or 0, 2), 0.0)
+    local blend = {
         shapeFirst = shapeFirst,
         shapeSecond = shapeSecond,
         shapeThird = shapeThird,
@@ -108,6 +188,10 @@ local function getPedHeadBlend(ped)
         skinMix = skinMix,
         thirdMix = thirdMix
     }
+    if ped == cache.ped then
+        cachedHeadBlend = copyHeadBlend(blend)
+    end
+    return blend
 end
 
 ---@param ped number entity id
@@ -191,41 +275,27 @@ end
 
 local function setPlayerModel(model)
     if type(model) == "string" then model = joaat(model) end
-
     if IsModelInCdimage(model) then
         RequestModel(model)
         while not HasModelLoaded(model) do Wait(0) end
-
-        SetPlayerModel(PlayerId(), model)
-        local ped = PlayerPedId()
-
-        if isPedFreemodeModel(ped) then
-            SetPedDefaultComponentVariation(ped)
-            SetPedHeadBlendData(ped, 21, 0, 0, 21, 0, 0, 0.5, 0.5, 0, false)
-        end
-
+        SetPlayerModel(cache.playerId, model)
+        Wait(150)
         SetModelAsNoLongerNeeded(model)
-
+        cachedHeadBlend = nil
+        if isPedFreemodeModel(cache.ped) then
+            SetPedDefaultComponentVariation(cache.ped)
+            ClearAllPedProps(cache.ped)
+            local blend = model == `mp_f_freemode_01` and DEFAULT_FEMALE_BLEND or DEFAULT_MALE_BLEND
+            applyHeadBlendData(cache.ped, blend)
+        end
         PED_TATTOOS = {}
-        return ped
+        return cache.ped
     end
-
-    return PlayerPedId()
+    return cache.ped
 end
 
 local function setPedHeadBlend(ped, headBlend)
-    if headBlend and isPedFreemodeModel(ped) then
-        local shapeFirst = headBlend.shapeFirst or 21
-        local shapeSecond = headBlend.shapeSecond or 0
-        local shapeThird = headBlend.shapeThird or 0
-        local skinFirst = headBlend.skinFirst or 21
-        local skinSecond = headBlend.skinSecond or 0
-        local skinThird = headBlend.skinThird or 0
-        local shapeMix = tofloat(headBlend.shapeMix or 0.5)
-        local skinMix = tofloat(headBlend.skinMix or 0.5)
-        local thirdMix = tofloat(headBlend.thirdMix or 0)
-        SetPedHeadBlendData(ped, shapeFirst, shapeSecond, shapeThird, skinFirst, skinSecond, skinThird, shapeMix, skinMix, thirdMix, false)
-    end
+    applyHeadBlendData(ped, headBlend)
 end
 
 local function setPedFaceFeatures(ped, faceFeatures)
@@ -411,33 +481,23 @@ end
 
 local function setPedAppearance(ped, appearance)
     if appearance then
-        local targetPed = (ped and DoesEntityExist(ped)) and ped or PlayerPedId()
-
-        if isPedFreemodeModel(targetPed) then
-            SetPedDefaultComponentVariation(targetPed)
+        setPedComponents(ped, appearance.components)
+        setPedProps(ped, appearance.props)
+        if appearance.headBlend and isPedFreemodeModel(ped) then
+            applyHeadBlendData(ped, appearance.headBlend)
         end
-
-        if appearance.headBlend and isPedFreemodeModel(targetPed) then
-            setPedHeadBlend(targetPed, appearance.headBlend)
-        elseif isPedFreemodeModel(targetPed) then
-            SetPedHeadBlendData(targetPed, 21, 0, 0, 21, 0, 0, 0.5, 0.5, 0, false)
-        end
-
-        if appearance.faceFeatures then setPedFaceFeatures(targetPed, appearance.faceFeatures) end
-        if appearance.headOverlays then setPedHeadOverlays(targetPed, appearance.headOverlays) end
-        if appearance.components then setPedComponents(targetPed, appearance.components) end
-        if appearance.props then setPedProps(targetPed, appearance.props) end
-        if appearance.hair then setPedHair(targetPed, appearance.hair, appearance.tattoos) end
-        if appearance.eyeColor then setPedEyeColor(targetPed, appearance.eyeColor) end
-        if appearance.tattoos then setPedTattoos(targetPed, appearance.tattoos) end
+        if appearance.faceFeatures then setPedFaceFeatures(ped, appearance.faceFeatures) end
+        if appearance.headOverlays then setPedHeadOverlays(ped, appearance.headOverlays) end
+        if appearance.hair then setPedHair(ped, appearance.hair, appearance.tattoos) end
+        if appearance.eyeColor then setPedEyeColor(ped, appearance.eyeColor) end
+        if appearance.tattoos then setPedTattoos(ped, appearance.tattoos) end
     end
 end
 
 local function setPlayerAppearance(appearance)
     if appearance then
         setPlayerModel(appearance.model)
-        local ped = PlayerPedId()
-        setPedAppearance(ped, appearance)
+        setPedAppearance(cache.ped, appearance)
     end
 end
 
