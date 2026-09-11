@@ -4,7 +4,69 @@ Config.Debug = false
 
 Config.TaxRate = 0.15 -- Tax Rate applied at checkout (e.g. 0.15 = 15% Sales Tax)
 
+Config.ClothingCost = 100
+Config.BarberCost = 50
+Config.TattooCost = 50
+Config.SurgeonCost = 100
+
 Config.ChargePerTattoo = true -- Charge players per tattoo
+
+Config.FreeOnFullAccess = true -- Character creator and /pedmenu full access are free. Normal shops stay paid.
+
+Config.ClothingPrices = {
+    Default = 100,
+    Texture = 10,
+    Color = 10,
+    Overlay = 50,
+    FaceFeature = 10,
+    HeadBlend = 10,
+    Hair = 100,
+    EyeColor = 50,
+    Tattoo = 100,
+    Components = {
+        Masks = 80,           -- component 1
+        UpperBody = 50,       -- component 3
+        LowerBody = 120,      -- component 4
+        Bags = 90,            -- component 5
+        Shoes = 90,           -- component 6
+        ScarfAndChains = 60,  -- component 7
+        BodyArmor = 150,      -- component 9
+        Shirts = 70,          -- component 8
+        Decals = 40,          -- component 10
+        Jackets = 150         -- component 11
+    },
+    Props = {
+        Hats = 80,            -- prop 0
+        Glasses = 60,         -- prop 1
+        Ear = 40,             -- prop 2
+        Watches = 70,         -- prop 6
+        Bracelets = 50        -- prop 7
+    },
+    Items = {
+        Components = {
+            -- [componentId] = { [drawable] = price } or { [drawable] = { [texture] = price } }
+            -- [11] = { [5] = 250, [12] = { [0] = 300, [1] = 350 } },
+        },
+        Props = {
+            -- [propId] = { [drawable] = price } or { [drawable] = { [texture] = price } }
+            -- [0] = { [1] = 200 },
+        }
+    }
+}
+
+Config.ClothingImages = {
+    BaseUrl = "", -- Optional custom CDN root. Empty uses the default GTA5-Cloth-Assets CDN.
+    Components = {
+        -- [componentId] = url, or [componentId] = { [drawable] = url }, or { [drawable] = { [texture] = url } }
+        -- [11] = { [5] = "https://example.com/tops/5.webp", [12] = { [0] = "https://example.com/tops/12_0.webp" } },
+    },
+    Props = {
+        -- [0] = { [1] = "https://example.com/hats/1.webp" },
+    },
+    Hair = {
+        -- [0] = "https://example.com/hair/0.webp",
+    }
+}
 
 -- Only set this to true if you're using rcore_tattoos
 Config.RCoreTattoosCompatibility = false

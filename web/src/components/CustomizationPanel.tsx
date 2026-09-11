@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Nui from '../Nui';
-import { getCdnUrl } from '../utils';
+import { ClothingImages, ClothingPrices, getClothingImage, getItemPrice } from '../utils';
 
 export const GTA_HAIR_COLORS: string[] = [
   "#1c1e1d", "#36302e", "#3c2e28", "#462d22", "#562d1d", "#6e331d", "#7e371e", "#914122",
@@ -36,6 +36,9 @@ export default function CustomizationPanel({
   setTotalCost,
   gender,
   onTextureSelect,
+  isFree,
+  prices,
+  images,
 }: {
   activeCategory: string;
   activeItem?: any;
@@ -45,6 +48,9 @@ export default function CustomizationPanel({
   gender?: 'male' | 'female';
   totalCost?: number;
   onTextureSelect?: (textureId: number) => void;
+  isFree?: boolean;
+  prices?: ClothingPrices;
+  images?: ClothingImages;
 }) {
   const [colorTarget, setColorTarget] = useState<'primary' | 'secondary'>('primary');
   const [mixType, setMixType] = useState<'mixA' | 'mixB'>('mixB');
@@ -73,7 +79,8 @@ export default function CustomizationPanel({
     }
 
     const handleSelectColor = (cIdx: number) => {
-      if (setTotalCost) setTotalCost(prev => prev + 10);
+      const colorPrice = getItemPrice(prices, !!isFree, 'color');
+      if (setTotalCost && colorPrice > 0) setTotalCost(prev => prev + colorPrice);
 
       if (isHairCat) {
         const newPrimary = colorTarget === 'primary' ? cIdx : primaryColor;
@@ -323,7 +330,8 @@ export default function CustomizationPanel({
   const itemId = type === 'component' ? activeItem.component_id : activeItem.prop_id;
 
   const handleUpdateTexture = (textureId: number) => {
-    if (setTotalCost) setTotalCost(prev => prev + 10);
+    const texturePrice = getItemPrice(prices, !!isFree, 'texture', itemId, activeItem.drawable, textureId);
+    if (setTotalCost && texturePrice > 0) setTotalCost(prev => prev + texturePrice);
     if (type === 'component') {
       Nui.post('appearance_change_component', {
         component_id: itemId,
@@ -344,8 +352,6 @@ export default function CustomizationPanel({
 
   const maxTextures = 9; // 3x3 texture grid
   const currentTexture = activeItem.texture || 0;
-  const imgBase = getCdnUrl(type as any, itemId, activeItem.drawable, 0, gender);
-  const imgBasePath = imgBase.replace(/(\/\d+\.webp)$/, '');
 
   return (
     <div className="w-[380px] flex flex-col pointer-events-auto select-none">
@@ -369,7 +375,7 @@ export default function CustomizationPanel({
         <div className="grid grid-cols-3 gap-1.5 pr-1">
           {Array.from({ length: maxTextures }).map((_, tex) => {
             const isActive = currentTexture === tex;
-            const imgSrc = `${imgBasePath}/${tex}.webp`;
+            const imgSrc = getClothingImage(images, type as 'component' | 'prop', itemId, activeItem.drawable, tex, gender);
             return (
               <button
                 key={tex}

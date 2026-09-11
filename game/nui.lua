@@ -42,7 +42,15 @@ RegisterNUICallback("appearance_get_data", function(_, cb)
             end
         end
     end
-    cb({ config = client.getConfig(), appearanceData = appearanceData, appearanceSettings = client.getAppearanceSettings(), money = { cash = cash, bank = bank }, theme = Config.Theme })
+    local cfg = client.getConfig() or {}
+    cb({
+        config = cfg,
+        isFree = cfg.isFree == true,
+        appearanceData = appearanceData,
+        appearanceSettings = client.getAppearanceSettings(),
+        money = { cash = cash, bank = bank },
+        theme = Config.Theme
+    })
 end)
 
 RegisterNUICallback("appearance_set_camera", function(camera, cb)
@@ -129,7 +137,9 @@ RegisterNUICallback("appearance_change_eye_color", function(eyeColor, cb)
 end)
 
 RegisterNUICallback("appearance_apply_tattoo", function(data, cb)
-    local paid = not data.tattoo or not Config.ChargePerTattoo or lib.callback.await("illenium-appearance:server:payForTattoo", false, data.tattoo)
+    local cfg = client.getConfig()
+    local skipCharge = cfg and cfg.isFree
+    local paid = not data.tattoo or not Config.ChargePerTattoo or skipCharge or lib.callback.await("illenium-appearance:server:payForTattoo", false, data.tattoo)
     if paid then
         client.addPedTattoo(cache.ped, data.updatedTattoos or data)
     end

@@ -1,4 +1,5 @@
 import React from 'react';
+import { KeyAssets, KeyCap } from './GameIcon';
 
 export const MAIN_TABS = [
   'FACE & BODY',
@@ -24,8 +25,8 @@ export default function Navigation({
   return (
     <div className="flex items-center gap-1 pointer-events-auto">
       {showQandE && (
-        <div className="bg-[#1a1c23] text-white px-3 py-1 flex items-center justify-center text-sm font-oswald font-bold border-r border-zinc-700 shadow-lg">
-          Q
+        <div className="bg-[#1a1c23] px-2 py-1 flex items-center justify-center border-r border-zinc-700 shadow-lg">
+          <KeyCap src={KeyAssets.q} alt="Q" className="h-6 w-6" />
         </div>
       )}
       
@@ -47,8 +48,8 @@ export default function Navigation({
       </div>
       
       {showQandE && (
-        <div className="bg-[#1a1c23] text-white px-3 py-1 flex items-center justify-center text-sm font-oswald font-bold ml-1 border-l border-zinc-700 shadow-lg">
-          E
+        <div className="bg-[#1a1c23] px-2 py-1 flex items-center justify-center ml-1 border-l border-zinc-700 shadow-lg">
+          <KeyCap src={KeyAssets.e} alt="E" className="h-6 w-6" />
         </div>
       )}
     </div>

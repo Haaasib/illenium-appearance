@@ -1,6 +1,7 @@
 import React from 'react';
 import Nui from '../Nui';
 import { getCategoryLucideIcon } from './CategoryIcons';
+import { ClothingPrices, getItemPrice } from '../utils';
 
 const FEATURE_NAMES: Record<string, string> = {
   // Head Blend
@@ -138,7 +139,9 @@ export default function Sliders({
   activeCategory,
   appearanceData,
   setAppearanceData,
-  setTotalCost
+  setTotalCost,
+  isFree,
+  prices
 }: {
   navPath: string[];
   setNavPath: (path: string[]) => void;
@@ -146,6 +149,8 @@ export default function Sliders({
   appearanceData: any;
   setAppearanceData: React.Dispatch<React.SetStateAction<any>>;
   setTotalCost: (val: (prev: number) => number) => void;
+  isFree?: boolean;
+  prices?: ClothingPrices;
 }) {
 
   const handleNavigateBack = () => {
@@ -157,7 +162,8 @@ export default function Sliders({
   };
 
   const handleFeatureChange = (key: string, value: number) => {
-    setTotalCost(prev => prev + 10);
+    const featurePrice = getItemPrice(prices, !!isFree, 'faceFeature');
+    if (featurePrice > 0) setTotalCost(prev => prev + featurePrice);
     setAppearanceData((prev: any) => ({
       ...prev,
       faceFeatures: {
@@ -181,7 +187,8 @@ export default function Sliders({
       thirdMix: 0
     };
     const updated = { ...currentBlend, [key]: val };
-    setTotalCost(prev => prev + 10);
+    const blendPrice = getItemPrice(prices, !!isFree, 'headBlend');
+    if (blendPrice > 0) setTotalCost(prev => prev + blendPrice);
     setAppearanceData((prev: any) => ({
       ...prev,
       headBlend: updated
@@ -190,7 +197,8 @@ export default function Sliders({
   };
 
   const handleHeadOverlayChange = (key: string, value: any) => {
-    setTotalCost(prev => prev + 50);
+    const overlayPrice = getItemPrice(prices, !!isFree, 'overlay');
+    if (overlayPrice > 0) setTotalCost(prev => prev + overlayPrice);
     const updatedOverlay = {
       style: value.style,
       opacity: value.opacity,

@@ -13,6 +13,7 @@ RegisterNetEvent("qb-clothing:client:openMenu", function()
     config.components = true
     config.props = true
     config.tattoos = true
+    config.isFree = true
     OpenShop(config, true, "all")
 end)
 

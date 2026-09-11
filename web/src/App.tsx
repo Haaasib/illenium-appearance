@@ -8,7 +8,9 @@ import Sliders from './components/Sliders';
 import CustomizationPanel from './components/CustomizationPanel';
 import EconomyWidget from './components/EconomyWidget';
 import SavedOutfits from './components/SavedOutfits';
-import { MouseIcon, RotateCcwIcon, ZoomInIcon, MoveIcon, CornerDownLeftIcon, XIcon, ShoppingCartIcon } from './components/icons/AnimatedIcons';
+import { RotateCcwIcon } from './components/icons/AnimatedIcons';
+import { ClothingImages, ClothingPrices } from './utils';
+import Keybinds from './components/Keybinds';
 
 export default function App() {
   const [visible, setVisible] = useState(typeof (window as any).invokeNative === 'undefined');
@@ -22,6 +24,9 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState<any>(null); // tracks clicked Grid item
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const initialAppearanceRef = React.useRef<any>(null);
+  const isFree = !!config?.isFree;
+  const prices: ClothingPrices | undefined = config?.prices;
+  const images: ClothingImages | undefined = config?.images;
 
   const availableMainTabs = React.useMemo(() => {
     if (!config) return ['APPAREL'];
@@ -49,7 +54,7 @@ export default function App() {
       const targetIdx = apparelIdx !== -1 ? apparelIdx : 0;
       setActiveMainTab(targetIdx);
       const tabName = availableMainTabs[targetIdx];
-      setNavPath([tabName]);
+      setNavPath(diveIntoTab(tabName));
     }
   }, [availableMainTabs]);
 
@@ -66,8 +71,10 @@ export default function App() {
       Nui.post('appearance_set_camera', 'bottoms');
     } else if (target.includes('SHOE') || target.includes('FOOT')) {
       Nui.post('appearance_set_camera', 'shoes');
-    } else {
+    } else if (target.includes('TOP') || target.includes('SHIRT') || target.includes('ARMOR') || target.includes('BAG') || target.includes('DECAL') || target.includes('GLOVE')) {
       Nui.post('appearance_set_camera', 'body');
+    } else {
+      Nui.post('appearance_set_camera', 'character');
     }
   };
 
@@ -95,6 +102,28 @@ export default function App() {
     'EARS': 2,
     'WATCHES': 6,
     'BRACELETS': 7,
+  };
+
+  const OVERLAY_MAP: Record<string, string> = {
+    'FACIAL HAIR': 'beard',
+    'EYEBROWS': 'eyebrows',
+    'CHEST HAIR': 'chestHair',
+    'BLEMISHES': 'blemishes',
+    'AGEING': 'ageing',
+    'COMPLEXION': 'complexion',
+    'SUN DAMAGE': 'sunDamage',
+    'MOLES & FRECKLES': 'moleAndFreckles',
+    'BODY BLEMISHES': 'bodyBlemishes',
+    'MAKEUP': 'makeUp',
+    'BLUSH': 'blush',
+    'LIPSTICK': 'lipstick',
+  };
+
+  const diveIntoTab = (tab: string) => {
+    if (tab === 'HAIR') return ['HAIR', 'STYLES'];
+    if (tab === 'OVERLAYS') return ['OVERLAYS', 'FACIAL HAIR'];
+    if (tab === 'FACE & BODY') return ['FACE & BODY'];
+    return [tab];
   };
 
   // Fetch initial data
@@ -132,13 +161,17 @@ export default function App() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'appearance_display') {
         setVisible(true);
+        setTotalCost(0);
+        setSelectedItem(null);
+        setShowPaymentModal(false);
+        Nui.post('appearance_set_camera', 'character');
         Nui.post('appearance_get_data').then(res => {
           if (res) {
             setAppearanceData(res.appearanceData);
-            if (!initialAppearanceRef.current && res.appearanceData) {
-              initialAppearanceRef.current = JSON.parse(JSON.stringify(res.appearanceData));
-            }
-            setConfig(res.config);
+            initialAppearanceRef.current = res.appearanceData
+              ? JSON.parse(JSON.stringify(res.appearanceData))
+              : null;
+            setConfig({ ...(res.config || {}), isFree: res.isFree === true || res.config?.isFree === true });
             if (res.appearanceSettings) setAppearanceSettings(res.appearanceSettings);
             if (res.money) setMoney(res.money);
             if (res.theme) applyTheme(res.theme);
@@ -153,6 +186,59 @@ export default function App() {
       }
     };
     window.addEventListener('message', handleMessage);
+
+    if (typeof (window as any).invokeNative === 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const freeMode = params.get('free') === '1';
+      setConfig({
+        ped: true,
+        headBlend: true,
+        faceFeatures: true,
+        headOverlays: true,
+        components: true,
+        props: true,
+        tattoos: true,
+        isFree: freeMode,
+        prices: {
+          Default: 100,
+          Texture: 10,
+          Color: 10,
+          Overlay: 50,
+          FaceFeature: 10,
+          HeadBlend: 10,
+          Hair: 100,
+          EyeColor: 50,
+          Tattoo: 100,
+          Components: {
+            Masks: 80,
+            UpperBody: 50,
+            LowerBody: 120,
+            Bags: 90,
+            Shoes: 90,
+            ScarfAndChains: 60,
+            BodyArmor: 150,
+            Shirts: 70,
+            Decals: 40,
+            Jackets: 150,
+          },
+          Props: {
+            Hats: 80,
+            Glasses: 60,
+            Ear: 40,
+            Watches: 70,
+            Bracelets: 50,
+          },
+        },
+        images: {},
+      });
+      setAppearanceData({
+        model: 'mp_m_freemode_01',
+        components: [],
+        props: [],
+        hair: { style: 0, color: 0, highlight: 0 },
+      });
+      setMoney({ cash: 5000, bank: 10000 });
+    }
 
     return () => {
       window.removeEventListener('message', handleMessage);
@@ -230,7 +316,7 @@ export default function App() {
         if (tabs.length > 1) {
           setActiveMainTab((prev) => {
             const newIdx = prev > 0 ? prev - 1 : prev;
-            handleSetNavPath([tabs[newIdx]]);
+            handleSetNavPath(diveIntoTab(tabs[newIdx]));
             return newIdx;
           });
         }
@@ -239,7 +325,7 @@ export default function App() {
         if (tabs.length > 1) {
           setActiveMainTab((prev) => {
             const newIdx = prev < tabs.length - 1 ? prev + 1 : prev;
-            handleSetNavPath([tabs[newIdx]]);
+            handleSetNavPath(diveIntoTab(tabs[newIdx]));
             return newIdx;
           });
         }
@@ -256,7 +342,13 @@ export default function App() {
       }
       if (e.key === 'Tab' || e.key === 'Enter') {
         e.preventDefault();
-        setShowPaymentModal(true);
+        if (isFree) {
+          Nui.post('appearance_save', { paymentMethod: 'cash', cost: 0 });
+          setShowPaymentModal(false);
+          setVisible(false);
+        } else {
+          setShowPaymentModal(true);
+        }
       }
     };
     const isDragging = { current: false };
@@ -307,7 +399,7 @@ export default function App() {
       window.removeEventListener('mouseup', handleWindowMouseUp);
       window.removeEventListener('wheel', handleWindowWheel);
     };
-  }, [visible, showPaymentModal]);
+  }, [visible, showPaymentModal, isFree]);
 
 
   if (!visible) return null;
@@ -427,7 +519,18 @@ export default function App() {
 
   // Determine view mode based on category
   const getCategoryViewMode = (cat: string) => {
-    if (COMPONENT_MAP[cat] !== undefined || PROP_MAP[cat] !== undefined || cat === 'EYE COLOR' || cat === 'HAIRSTYLE' || cat === 'STYLES' || cat === 'HAIR' || cat === 'PEDS' || cat === 'PED MODELS' || cat === 'PED' || navPath[0] === 'TATTOOS') return 'grid';
+    if (
+      COMPONENT_MAP[cat] !== undefined ||
+      PROP_MAP[cat] !== undefined ||
+      OVERLAY_MAP[cat] !== undefined ||
+      cat === 'EYE COLOR' ||
+      cat === 'HAIRSTYLE' ||
+      cat === 'STYLES' ||
+      cat === 'PEDS' ||
+      cat === 'PED MODELS' ||
+      cat === 'PED' ||
+      navPath[0] === 'TATTOOS'
+    ) return 'grid';
     return 'slider';
   };
 
@@ -466,7 +569,21 @@ export default function App() {
       itemType = 'eye_color';
       itemsToRender = Array.from({length: 32}).map((_, i) => ({ drawable: i, texture: 0 }));
       activeItem = { drawable: appearanceData?.eyeColor || 0 };
-    } else if (activeCategory === 'HAIRSTYLE' || activeCategory === 'STYLES' || activeCategory === 'HAIR') {
+    } else if (OVERLAY_MAP[activeCategory]) {
+      itemType = 'overlay';
+      const overlayKey = OVERLAY_MAP[activeCategory];
+      let max = 28;
+      if (appearanceSettings?.headOverlays?.[overlayKey]?.style) {
+        max = (appearanceSettings.headOverlays[overlayKey].style.max || 28) + 1;
+      }
+      itemsToRender = Array.from({ length: Math.max(max, 8) }).map((_, i) => ({
+        drawable: i,
+        texture: 0,
+        overlayKey,
+      }));
+      const ov = appearanceData?.headOverlays?.[overlayKey];
+      activeItem = { drawable: ov?.style || 0, overlayKey };
+    } else if (activeCategory === 'HAIRSTYLE' || activeCategory === 'STYLES') {
       itemType = 'hair';
       itemId = 2;
       let max = 76;
@@ -521,7 +638,9 @@ export default function App() {
   const isSelectedItemForCurrentCategory = 
     selectedItem && (
       (itemType === 'component' && selectedItem.component_id === itemId) ||
-      (itemType === 'prop' && selectedItem.prop_id === itemId)
+      (itemType === 'prop' && selectedItem.prop_id === itemId) ||
+      (itemType === 'overlay' && selectedItem.overlayKey === activeItem?.overlayKey) ||
+      (itemType === 'hair' && selectedItem.drawable !== undefined)
     );
   const currentActiveItem = isSelectedItemForCurrentCategory ? selectedItem : activeItem;
 
@@ -558,6 +677,21 @@ export default function App() {
           texture: item.texture || 0
         };
         return { ...prev, hair };
+      } else if (itemType === 'overlay' && item.overlayKey) {
+        const current = prev.headOverlays?.[item.overlayKey] || {};
+        return {
+          ...prev,
+          headOverlays: {
+            ...(prev.headOverlays || {}),
+            [item.overlayKey]: {
+              ...current,
+              style: item.drawable,
+              opacity: current.opacity ?? 1,
+              color: current.color || 0,
+              secondColor: current.secondColor || 0,
+            },
+          },
+        };
       }
       return prev;
     });
@@ -590,58 +724,35 @@ export default function App() {
   };
 
   const handleConfirmPayment = (paymentMethod: 'cash' | 'card') => {
-    Nui.post('appearance_save', { paymentMethod, cost: totalCost });
+    Nui.post('appearance_save', { paymentMethod, cost: isFree ? 0 : totalCost });
     setShowPaymentModal(false);
     setVisible(false);
   };
 
+  const handleConfirm = () => {
+    if (isFree) {
+      handleConfirmPayment('cash');
+      return;
+    }
+    setShowPaymentModal(true);
+  };
+
   const renderKeybinds = () => (
-    <div className="flex flex-col gap-2 items-end font-oswald font-bold text-[13px] text-white/90 uppercase tracking-widest">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <span className="w-5 h-5 bg-white text-black flex items-center justify-center rounded-sm text-[11px] leading-none">W</span>
-          UP
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-5 h-5 bg-white text-black flex items-center justify-center rounded-sm text-[11px] leading-none">S</span>
-          DOWN
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-5 h-5 bg-white text-black flex items-center justify-center rounded-sm text-[11px] leading-none">A</span>
-          LEFT
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-5 h-5 bg-white text-black flex items-center justify-center rounded-sm text-[11px] leading-none">D</span>
-          RIGHT
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <span className="bg-white text-black px-1.5 py-0.5 min-w-[20px] h-5 text-[11px] leading-none flex items-center justify-center rounded-sm">SCROLL</span>
-          ZOOM
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-white text-black px-1.5 py-0.5 min-w-[24px] h-5 text-[11px] leading-none flex items-center justify-center rounded-sm">ESC</span>
-          EXIT
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-white text-black px-1.5 py-0.5 min-w-[24px] h-5 text-[11px] leading-none flex items-center justify-center rounded-sm">TAB</span>
-          CHECKOUT
-        </div>
-      </div>
-    </div>
+    <Keybinds checkoutLabel={isFree ? 'SAVE' : 'CHECKOUT'} />
   );
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-transparent text-white antialiased select-none">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Oswald:wght@400;500;700&family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Bebas+Neue&family=Inter:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Oswald:wght@400;500;700&family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
           --font-title: 'Bebas Neue', sans-serif;
           --font-body: 'Oswald', sans-serif;
+          --font-barlow: 'Barlow Condensed', sans-serif;
         }
         .font-bebas { font-family: var(--font-title); }
         .font-oswald { font-family: var(--font-body); }
+        .font-barlow { font-family: var(--font-barlow); }
         .styled-scrollbar::-webkit-scrollbar { width: 4px; }
         .styled-scrollbar::-webkit-scrollbar-track { background: #111; }
         .styled-scrollbar::-webkit-scrollbar-thumb { background: #333; }
@@ -655,7 +766,7 @@ export default function App() {
             activeMainTab={activeMainTab} 
             onSelectTab={(idx, tab) => {
               setActiveMainTab(idx);
-              handleSetNavPath([tab]);
+              handleSetNavPath(diveIntoTab(tab));
             }} 
           />
           <EconomyWidget cash={money.cash} bank={money.bank} />
@@ -691,6 +802,9 @@ export default function App() {
               gender={gender}
               appearanceData={appearanceData}
               onItemSelect={handleItemSelect}
+              isFree={isFree}
+              prices={prices}
+              images={images}
             />
           ) : (
              <Sliders 
@@ -700,6 +814,8 @@ export default function App() {
                appearanceData={appearanceData}
                setAppearanceData={setAppearanceData}
                setTotalCost={setTotalCost}
+               isFree={isFree}
+               prices={prices}
              />
           )}
         </main>
@@ -727,19 +843,25 @@ export default function App() {
               gender={gender}
               totalCost={totalCost}
               onTextureSelect={handleTextureSelect}
+              isFree={isFree}
+              prices={prices}
+              images={images}
             />
           </div>
         );
       })()}
 
-      {/* TOTAL COST + CONFIRM + keybinds — always fixed at bottom-right */}
-      <div className="fixed bottom-8 right-12 z-50 flex flex-col items-end gap-4 pointer-events-auto select-none">
+      <div className="fixed bottom-7 left-1/2 -translate-x-1/2 z-50 pointer-events-none select-none">
+        {renderKeybinds()}
+      </div>
+
+      <div className="fixed bottom-20 right-12 z-50 flex flex-col items-end gap-4 pointer-events-auto select-none">
         <div className="w-[380px] flex flex-col shadow-2xl">
           <div className="bg-white text-black px-4 py-2.5 flex justify-between items-center">
             <span className="font-oswald font-bold text-[18px] tracking-wider uppercase">TOTAL COST</span>
             <div className="flex items-center gap-1 font-oswald font-bold text-[20px]">
-              <span>${totalCost.toLocaleString()}</span>
-              <span className="text-xs opacity-80 mt-1 uppercase">+ TAX</span>
+              <span>{isFree ? 'FREE' : `$${totalCost.toLocaleString()}`}</span>
+              {!isFree && <span className="text-xs opacity-80 mt-1 uppercase">+ TAX</span>}
             </div>
           </div>
           <div className="flex gap-1">
@@ -752,14 +874,13 @@ export default function App() {
               RESET
             </button>
             <button
-              onClick={() => setShowPaymentModal(true)}
+              onClick={handleConfirm}
               className="w-2/3 py-2.5 bg-black hover:bg-zinc-900 text-white font-oswald font-bold text-[18px] tracking-widest transition-colors uppercase cursor-pointer text-center"
             >
               CONFIRM
             </button>
           </div>
         </div>
-        {renderKeybinds()}
       </div>
 
       {/* Payment Confirmation Side Panel */}

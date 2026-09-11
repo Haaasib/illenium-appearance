@@ -1,3 +1,112 @@
+export type ClothingPrices = {
+  Default?: number;
+  Texture?: number;
+  Color?: number;
+  Overlay?: number;
+  FaceFeature?: number;
+  HeadBlend?: number;
+  Hair?: number;
+  EyeColor?: number;
+  Tattoo?: number;
+  Components?: Record<string, number>;
+  Props?: Record<string, number>;
+  Items?: {
+    Components?: Record<string, Record<string, number | Record<string, number>>>;
+    Props?: Record<string, Record<string, number | Record<string, number>>>;
+  };
+};
+
+export type ClothingImages = {
+  BaseUrl?: string;
+  Components?: Record<string, string | Record<string, string | Record<string, string>>>;
+  Props?: Record<string, string | Record<string, string | Record<string, string>>>;
+  Hair?: Record<string, string>;
+};
+
+const COMPONENT_PRICE_KEYS: Record<number, string> = {
+  1: 'Masks',
+  3: 'UpperBody',
+  4: 'LowerBody',
+  5: 'Bags',
+  6: 'Shoes',
+  7: 'ScarfAndChains',
+  8: 'Shirts',
+  9: 'BodyArmor',
+  10: 'Decals',
+  11: 'Jackets',
+};
+
+const PROP_PRICE_KEYS: Record<number, string> = {
+  0: 'Hats',
+  1: 'Glasses',
+  2: 'Ear',
+  6: 'Watches',
+  7: 'Bracelets',
+};
+
+const lookupNested = (table: any, ...keys: Array<string | number>): any => {
+  let current = table;
+  for (const key of keys) {
+    if (current == null) return undefined;
+    current = current[key] ?? current[String(key)];
+  }
+  return current;
+};
+
+export const getItemPrice = (
+  prices: ClothingPrices | undefined,
+  isFree: boolean,
+  kind: 'component' | 'prop' | 'hair' | 'eye_color' | 'tattoo' | 'texture' | 'color' | 'overlay' | 'faceFeature' | 'headBlend',
+  id = 0,
+  drawable = 0,
+  texture = 0,
+): number => {
+  if (isFree) return 0;
+  const fallback: Record<string, number> = {
+    component: prices?.Default ?? 100,
+    prop: prices?.Default ?? 100,
+    hair: prices?.Hair ?? prices?.Default ?? 100,
+    eye_color: prices?.EyeColor ?? 50,
+    tattoo: prices?.Tattoo ?? 100,
+    texture: prices?.Texture ?? 10,
+    color: prices?.Color ?? 10,
+    overlay: prices?.Overlay ?? 50,
+    faceFeature: prices?.FaceFeature ?? 10,
+    headBlend: prices?.HeadBlend ?? 10,
+  };
+  if (kind === 'component') {
+    const item = lookupNested(prices?.Items?.Components, id, drawable);
+    if (typeof item === 'number') return item;
+    const texPrice = lookupNested(item, texture);
+    if (typeof texPrice === 'number') return texPrice;
+    if (item && typeof item.default === 'number') return item.default;
+    const category = prices?.Components?.[COMPONENT_PRICE_KEYS[id]] ?? lookupNested(prices?.Components, id);
+    if (typeof category === 'number') return category;
+  }
+  if (kind === 'prop') {
+    const item = lookupNested(prices?.Items?.Props, id, drawable);
+    if (typeof item === 'number') return item;
+    const texPrice = lookupNested(item, texture);
+    if (typeof texPrice === 'number') return texPrice;
+    if (item && typeof item.default === 'number') return item.default;
+    const category = prices?.Props?.[PROP_PRICE_KEYS[id]] ?? lookupNested(prices?.Props, id);
+    if (typeof category === 'number') return category;
+  }
+  return fallback[kind] ?? prices?.Default ?? 100;
+};
+
+const DEFAULT_CDN = 'https://cdn.jsdelivr.net/gh/ShortByte/GTA5-Cloth-Assets/assets';
+
+const lookupImage = (table: any, ...keys: Array<string | number>): string | undefined => {
+  let current = table;
+  for (const key of keys) {
+    if (current == null) return undefined;
+    if (typeof current === 'string' && current !== '') return current;
+    current = current[key] ?? current[String(key)];
+  }
+  return typeof current === 'string' && current !== '' ? current : undefined;
+};
+
 export const getCdnUrl = (type: 'component' | 'prop', id: number, drawable: number, texture: number, gender: 'male' | 'female' = 'male') => {
   const componentMap: Record<number, { name: string, hasGender: boolean }> = {
     0: { name: 'head', hasGender: true },
@@ -30,7 +139,30 @@ export const getCdnUrl = (type: 'component' | 'prop', id: number, drawable: numb
   }
 
   const genderPath = category.hasGender ? `/${gender}` : '';
-  return `https://cdn.jsdelivr.net/gh/ShortByte/GTA5-Cloth-Assets/assets/${category.name}${genderPath}/${drawable}/${texture}.webp`;
+  return `${DEFAULT_CDN}/${category.name}${genderPath}/${drawable}/${texture}.webp`;
+};
+
+export const getClothingImage = (
+  images: ClothingImages | undefined,
+  type: 'component' | 'prop' | 'hair',
+  id: number,
+  drawable: number,
+  texture: number,
+  gender: 'male' | 'female' = 'male',
+): string => {
+  if (type === 'hair') {
+    const hairUrl = lookupImage(images?.Hair, drawable);
+    if (hairUrl) return hairUrl;
+    return getClothingImage(images, 'component', 2, drawable, texture, gender);
+  }
+  const map = type === 'prop' ? images?.Props : images?.Components;
+  const override = lookupImage(map, id, drawable, texture) || lookupImage(map, id, drawable) || lookupImage(map, id);
+  if (override) return override;
+  const cdnUrl = getCdnUrl(type, id, drawable, texture, gender);
+  if (images?.BaseUrl) {
+    return cdnUrl.replace(DEFAULT_CDN, images.BaseUrl.replace(/\/$/, ''));
+  }
+  return cdnUrl;
 };
 
 const DOCS = "https://docs.fivem.net";

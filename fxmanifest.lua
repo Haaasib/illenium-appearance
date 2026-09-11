@@ -93,7 +93,9 @@ files {
   "web/dist/index.html",
   "web/dist/assets/*.js",
   "web/dist/assets/*.css",
-  "web/dist/files/**/*"
+  "web/dist/files/**/*",
+  "web/dist/keybinds/**/*",
+  "web/dist/game-icons/**/*"
 }
 
 ui_page "web/dist/index.html"

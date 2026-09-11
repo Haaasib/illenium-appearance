@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Nui from '../Nui';
 import { Filter, Trash2, Check, Search, X } from 'lucide-react';
 import { getCategoryLucideIcon } from './CategoryIcons';
-import { getCdnUrl, getPedImageCandidates, getCachedAssetImage, setCachedAssetImage, getModelThumbDataUri } from '../utils';
+import { ClothingImages, ClothingPrices, getClothingImage, getItemPrice, getPedImageCandidates, getCachedAssetImage, setCachedAssetImage, getModelThumbDataUri } from '../utils';
 
 function PedCardImage({ model }: { model: string }) {
   const candidates = React.useMemo(() => getPedImageCandidates(model), [model]);
@@ -73,6 +73,42 @@ const TATTOO_ZONES = [
   { label: 'ZONE_RIGHT_LEG' },
 ];
 
+const TAB_ICON_LISTS: Record<string, { label: string }[]> = {
+  HAIR: [
+    { label: 'STYLES' },
+    { label: 'FACIAL HAIR' },
+    { label: 'EYEBROWS' },
+    { label: 'CHEST HAIR' },
+  ],
+  OVERLAYS: [
+    { label: 'BLEMISHES' },
+    { label: 'AGEING' },
+    { label: 'COMPLEXION' },
+    { label: 'SUN DAMAGE' },
+    { label: 'MOLES & FRECKLES' },
+    { label: 'BODY BLEMISHES' },
+    { label: 'MAKEUP' },
+    { label: 'BLUSH' },
+    { label: 'LIPSTICK' },
+    { label: 'FACIAL HAIR' },
+    { label: 'EYEBROWS' },
+    { label: 'CHEST HAIR' },
+  ],
+  'FACE & BODY': [
+    { label: 'HEAD BLEND' },
+    { label: 'EYE COLOR' },
+    { label: 'FACE FEATURES' },
+  ],
+  'FACE ADJUSTMENTS': [
+    { label: 'NOSE' },
+    { label: 'BROW' },
+    { label: 'EYES' },
+    { label: 'CHEEKS' },
+    { label: 'LIPS & JAW' },
+    { label: 'CHIN & NECK' },
+  ],
+};
+
 export default function Grid({ 
   navPath,
   setNavPath,
@@ -84,7 +120,10 @@ export default function Grid({
   setTotalCost,
   gender,
   appearanceData,
-  onItemSelect
+  onItemSelect,
+  isFree,
+  prices,
+  images
 }: { 
   navPath: string[];
   setNavPath: (path: string[]) => void;
@@ -97,13 +136,25 @@ export default function Grid({
   gender?: 'male' | 'female';
   appearanceData?: any;
   onItemSelect?: (item: any) => void;
+  isFree?: boolean;
+  prices?: ClothingPrices;
+  images?: ClothingImages;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!activeCategory || itemsToRender.length === 0) return null;
 
-  const handleUpdateItem = (drawable: number, texture: number) => {
-    if (setTotalCost && itemType !== 'ped_model') setTotalCost(prev => prev + 100);
+  const resolvePrice = (drawable: number, texture = 0, extra?: number) => {
+    if (typeof extra === 'number') return isFree ? 0 : extra;
+    const kind = itemType === 'prop' ? 'prop' : itemType === 'hair' ? 'hair' : itemType === 'eye_color' ? 'eye_color' : itemType === 'tattoo' ? 'tattoo' : itemType === 'overlay' ? 'overlay' : 'component';
+    return getItemPrice(prices, !!isFree, kind as any, itemId, drawable, texture);
+  };
+
+  const handleUpdateItem = (drawable: number, texture: number, extra?: number) => {
+    if (setTotalCost && itemType !== 'ped_model') {
+      const nextPrice = resolvePrice(drawable, texture, extra);
+      if (nextPrice > 0) setTotalCost(prev => prev + nextPrice);
+    }
 
     if (itemType === 'ped_model') {
       const targetItem = itemsToRender[drawable] || itemsToRender.find(it => it.drawable === drawable);
@@ -142,6 +193,20 @@ export default function Grid({
       const highlight = appearanceData?.hair?.highlight || 0;
       Nui.post('appearance_change_hair', { style: drawable, color, highlight });
       if (onItemSelect) onItemSelect({ drawable, texture: 0 });
+    } else if (itemType === 'overlay') {
+      const overlayItem = itemsToRender[drawable] || itemsToRender.find(it => it.drawable === drawable);
+      const overlayKey = overlayItem?.overlayKey;
+      if (overlayKey) {
+        const current = appearanceData?.headOverlays?.[overlayKey] || {};
+        Nui.post('appearance_change_head_overlay', {
+          key: overlayKey,
+          style: drawable,
+          opacity: current.opacity ?? 1,
+          color: current.color || 0,
+          secondColor: current.secondColor || 0,
+        });
+        if (onItemSelect) onItemSelect({ drawable, texture: 0, overlayKey, style: drawable });
+      }
     }
   };
 
@@ -157,6 +222,24 @@ export default function Grid({
         Nui.post('appearance_delete_tattoo', activeItem);
         if (onItemSelect) onItemSelect(null);
       }
+    } else if (itemType === 'overlay') {
+      const overlayKey = activeItem?.overlayKey || itemsToRender[0]?.overlayKey;
+      if (overlayKey) {
+        const current = appearanceData?.headOverlays?.[overlayKey] || {};
+        Nui.post('appearance_change_head_overlay', {
+          key: overlayKey,
+          style: 255,
+          opacity: 0,
+          color: current.color || 0,
+          secondColor: current.secondColor || 0,
+        });
+        if (onItemSelect) onItemSelect({ drawable: 255, texture: 0, overlayKey, style: 255 });
+      }
+    } else if (itemType === 'hair') {
+      const color = appearanceData?.hair?.color || 0;
+      const highlight = appearanceData?.hair?.highlight || 0;
+      Nui.post('appearance_change_hair', { style: 0, color, highlight });
+      if (onItemSelect) onItemSelect({ drawable: 0, texture: 0 });
     }
   };
 
@@ -285,6 +368,31 @@ export default function Grid({
           </div>
         )}
 
+        {TAB_ICON_LISTS[mainTab] && (
+          <div className="w-[52px] flex flex-col gap-[3px] max-h-[72vh] overflow-y-auto styled-scrollbar">
+            {TAB_ICON_LISTS[mainTab].map(sub => {
+              const isSubActive = activeCategory === sub.label;
+              return (
+                <button
+                  key={sub.label}
+                  title={sub.label}
+                  onClick={() => {
+                    setNavPath([mainTab, sub.label]);
+                  }}
+                  className={`
+                    w-full h-[52px] flex items-center justify-center transition-all cursor-pointer shadow-md
+                    ${isSubActive
+                      ? 'bg-white text-black ring-1 ring-white'
+                      : 'bg-[#181a20]/90 text-white/40 hover:text-white hover:bg-zinc-800'}
+                  `}
+                >
+                  {getCategoryLucideIcon(sub.label, `w-6 h-6 ${isSubActive ? 'text-black' : 'text-white/40'}`)}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Left Side Icon Column for TATTOOS */}
         {mainTab === 'TATTOOS' && (
           <div className="w-[52px] flex flex-col gap-[3px]">
@@ -354,6 +462,7 @@ export default function Grid({
             {filteredItems.map((item, idx) => {
               const isPedModel = itemType === 'ped_model';
               const isTattoo = itemType === 'tattoo';
+              const isOverlay = itemType === 'overlay';
               const isActive = isPedModel 
                 ? (appearanceData?.model === item.model || activeItem?.model === item.model)
                 : isTattoo
@@ -364,27 +473,31 @@ export default function Grid({
                 ? (item.model || item.name || '')
                 : isTattoo
                 ? (item.label || item.name || '')
+                : isOverlay
+                ? (item.drawable === 0 ? 'NONE' : `STYLE ${item.drawable}`)
                 : `${activeCategory} ${item.drawable}`;
 
-              const variantCount = (!isPedModel && !isTattoo) ? (item.drawable % 3 === 1 ? 1 : item.drawable % 5 === 0 ? 2 : 0) : 0;
+              const variantCount = (!isPedModel && !isTattoo && !isOverlay) ? (item.drawable % 3 === 1 ? 1 : item.drawable % 5 === 0 ? 2 : 0) : 0;
               
-              let imgPath = getCdnUrl(
-                itemType === 'component' ? 'component' : 'prop', 
-                itemId, 
-                item.drawable, 
-                0, 
+              const itemPrice = resolvePrice(item.drawable, item.texture || 0, item.cost);
+              let imgPath = getClothingImage(
+                images,
+                itemType === 'prop' ? 'prop' : 'component',
+                itemId,
+                item.drawable,
+                item.texture || 0,
                 gender
               );
               if (itemType === 'hair') {
-                imgPath = getCdnUrl('component', 2, item.drawable, 0, gender);
-              } else if (itemType === 'eye_color' || isPedModel || isTattoo) {
+                imgPath = getClothingImage(images, 'hair', 2, item.drawable, item.texture || 0, gender);
+              } else if (itemType === 'eye_color' || isPedModel || isTattoo || isOverlay) {
                 imgPath = './files/faces/SKEL_ROOT.000.webp';
               }
 
               return (
                 <button
                   key={idx}
-                  onClick={() => handleUpdateItem(item.drawable, item.texture)}
+                  onClick={() => handleUpdateItem(item.drawable, item.texture, item.cost)}
                   className={`
                     relative flex flex-col aspect-[4/5] bg-[#181a20] group transition-all cursor-pointer overflow-hidden
                     ${isActive ? 'ring-2 ring-white border border-white z-10' : 'border border-white/5 hover:border-white/40'}
@@ -401,6 +514,15 @@ export default function Grid({
                   <div className="flex-1 w-full flex flex-col items-center justify-center overflow-hidden p-2 relative">
                     {isPedModel ? (
                       <PedCardImage model={item.model || item.name} />
+                    ) : isOverlay ? (
+                      <div className="flex flex-col items-center justify-center gap-1.5 text-white/80 group-hover:text-white transition-colors p-2 text-center">
+                        <div className="w-10 h-10 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-white">
+                          {getCategoryLucideIcon(activeCategory, 'w-5 h-5')}
+                        </div>
+                        <span className="text-[10px] font-oswald text-zinc-400 truncate max-w-[110px] uppercase">
+                          {item.drawable === 0 ? 'NONE' : `STYLE ${item.drawable}`}
+                        </span>
+                      </div>
                     ) : isTattoo ? (
                       <div className="flex flex-col items-center justify-center gap-1.5 text-white/80 group-hover:text-white transition-colors p-2 text-center">
                         <div className="w-10 h-10 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-white">
@@ -434,10 +556,14 @@ export default function Grid({
                       <div className="text-white flex-shrink-0">
                         <Check className="w-4 h-4" />
                       </div>
+                    ) : isFree || itemPrice <= 0 ? (
+                      <div className="bg-emerald-400 text-black px-1.5 py-0.5 flex items-center gap-0.5 leading-none flex-shrink-0">
+                        <span className="font-oswald text-[11px] font-bold">FREE</span>
+                      </div>
                     ) : (
                       <div className="bg-white text-black px-1.5 py-0.5 flex items-center gap-0.5 leading-none flex-shrink-0">
                         <span className="text-[9px] font-bold">$</span>
-                        <span className="font-oswald text-[11px] font-bold">100</span>
+                        <span className="font-oswald text-[11px] font-bold">{itemPrice}</span>
                       </div>
                     )}
                   </div>

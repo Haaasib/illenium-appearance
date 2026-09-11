@@ -84,6 +84,7 @@ end)
 local function getNewCharacterConfig()
     local config = GetDefaultConfig()
     config.enableExit   = false
+    config.isFree       = Config.FreeOnFullAccess ~= false
 
     config.ped          = Config.NewCharacterSections.Ped
     config.headBlend    = Config.NewCharacterSections.HeadBlend
@@ -125,10 +126,24 @@ function InitializeCharacter(gender, onSubmit, onCancel)
     end, config)
 end
 
+local function isFullAccessMenu(value)
+    if value == true or value == 1 then
+        return true
+    end
+    if type(value) == "table" then
+        return value.isPedMenu == true or value[1] == true
+    end
+    return false
+end
+
 function OpenShop(config, isPedMenu, shopType)
+    local free = isFullAccessMenu(isPedMenu) or (config and config.isFree == true)
+    if free and config then
+        config.isFree = true
+    end
     client.startPlayerCustomization(function(appearance)
         if appearance then
-            if not isPedMenu then
+            if not free then
                 local method = (appearance and appearance.paymentMethod) or "cash"
                 local cost = appearance and appearance.cost
                 TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType, method, cost)
@@ -147,6 +162,7 @@ function OpenShop(config, isPedMenu, shopType)
 end
 
 local function OpenClothingShop(isPedMenu)
+    isPedMenu = isFullAccessMenu(isPedMenu)
     local config = GetDefaultConfig()
     config.components = true
     config.props = true
@@ -157,6 +173,7 @@ local function OpenClothingShop(isPedMenu)
         config.faceFeatures = true
         config.headOverlays = true
         config.tattoos = not Config.RCoreTattoosCompatibility and true
+        config.isFree = true
     end
     OpenShop(config, isPedMenu, "clothing")
 end
@@ -615,10 +632,7 @@ function OpenMenu(isPedMenu, menuType, menuData)
 end
 
 RegisterNetEvent("illenium-appearance:client:openClothingShopMenu", function(isPedMenu)
-    if type(isPedMenu) == "table" then
-        isPedMenu = false
-    end
-    OpenClothingShop(isPedMenu)
+    OpenClothingShop(isFullAccessMenu(isPedMenu))
 end)
 
 RegisterNetEvent("illenium-appearance:client:OpenBarberShop", OpenBarberShop)

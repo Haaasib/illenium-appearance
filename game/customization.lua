@@ -386,48 +386,69 @@ local currentCamera
 local cameraHandle
 local isCameraTracking = false
 local cameraHandle = nil
-local camOffset = 1.5
-local camHeight = 0.2
-local currentCamera = "default"
+local camOffset = 1.15
+local camHeight = 0.28
+local camSide = -0.28
+local camLookX = 0.18
+local camBone = 39317
+local camFov = 40.0
+local currentCamera = "character"
+
+local function applyCameraPreset(key)
+    if key == "head" then
+        camOffset = 0.46
+        camHeight = 0.64
+        camBone = 31086
+        camFov = 32.0
+    elseif key == "body" or key == "torso" then
+        camOffset = 1.02
+        camHeight = 0.2
+        camBone = 24818
+        camFov = 38.0
+    elseif key == "bottoms" or key == "legs" then
+        camOffset = 1.0
+        camHeight = -0.38
+        camBone = 11816
+        camFov = 40.0
+    elseif key == "shoes" then
+        camOffset = 0.72
+        camHeight = -0.78
+        camBone = 52301
+        camFov = 36.0
+    else
+        camOffset = 1.15
+        camHeight = 0.28
+        camBone = 39317
+        camFov = 40.0
+    end
+end
 
 local function setCamera(key)
     if key ~= "current" then
         currentCamera = key
+        applyCameraPreset(key)
     end
-
-    if key == "head" then
-        camOffset = 0.5
-        camHeight = 0.65
-    elseif key == "body" or key == "torso" then
-        camOffset = 1.0
-        camHeight = 0.2
-    elseif key == "bottoms" or key == "legs" then
-        camOffset = 1.0
-        camHeight = -0.4
-    elseif key == "shoes" then
-        camOffset = 0.8
-        camHeight = -0.8
-    else
-        camOffset = 1.5
-        camHeight = 0.2
-    end
-
     if not cameraHandle then
         cameraHandle = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
         SetCamActive(cameraHandle, true)
-        RenderScriptCams(true, true, 500, true, true)
-        SetCamUseShallowDofMode(cameraHandle, false)
-        SetCamDofStrength(cameraHandle, 0.0)
+        RenderScriptCams(true, true, 800, true, true)
+        SetCamUseShallowDofMode(cameraHandle, true)
+        SetCamDofStrength(cameraHandle, 0.9)
     end
-
+    SetCamFov(cameraHandle, camFov)
     if not isCameraTracking then
         isCameraTracking = true
         CreateThread(function()
             while cameraHandle do
                 local playerPed = cache.ped or PlayerPedId()
-                local coords = GetOffsetFromEntityInWorldCoords(playerPed, 0.05, camOffset, camHeight)
-                SetCamCoord(cameraHandle, coords.x, coords.y, coords.z + 0.2)
-                SetCamRot(cameraHandle, 0.0, 0.0, GetEntityHeading(playerPed) + 190)
+                local coords = GetOffsetFromEntityInWorldCoords(playerPed, camSide, camOffset, camHeight)
+                SetCamCoord(cameraHandle, coords.x, coords.y, coords.z)
+                PointCamAtPedBone(cameraHandle, playerPed, camBone, camLookX, 0.0, 0.04, true)
+                SetCamFov(cameraHandle, camFov)
+                SetCamNearDof(cameraHandle, math.max(0.05, camOffset - 0.5))
+                SetCamFarDof(cameraHandle, camOffset + 0.55)
+                SetCamDofStrength(cameraHandle, 0.9)
+                SetUseHiDof()
                 Wait(0)
             end
             isCameraTracking = false
@@ -540,7 +561,7 @@ function client.startPlayerCustomization(cb, conf)
     reverseCamera = false
     isCameraInterpolating = false
 
-    setCamera("default")
+    setCamera("character")
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     RenderScriptCams(true, false, 0, true, true)

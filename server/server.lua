@@ -2,6 +2,15 @@ local outfitCache = {}
 local uniformCache = {}
 
 local function getMoneyForShop(shopType)
+    if shopType == "clothing" then
+        return Config.ClothingCost or 0
+    elseif shopType == "barber" then
+        return Config.BarberCost or 0
+    elseif shopType == "tattoo" then
+        return Config.TattooCost or 0
+    elseif shopType == "surgeon" then
+        return Config.SurgeonCost or 0
+    end
     return 0
 end
 
@@ -161,9 +170,10 @@ end)
 
 RegisterServerEvent("illenium-appearance:server:chargeCustomer", function(shopType, paymentType, customCost)
     local src = source
-    local baseCost = (customCost and customCost > 0) and customCost or getMoneyForShop(shopType)
+    local baseCost = (type(customCost) == "number") and customCost or getMoneyForShop(shopType)
     local taxRate = Config.TaxRate or 0
     local totalMoney = math.floor(baseCost * (1 + taxRate) + 0.5)
+    if totalMoney <= 0 then return end
     local pType = (paymentType == "card" or paymentType == "bank") and "bank" or "cash"
     if Framework.RemoveMoney(src, pType, totalMoney) then
         lib.notify(src, {
