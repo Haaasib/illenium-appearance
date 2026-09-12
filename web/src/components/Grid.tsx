@@ -494,7 +494,16 @@ export default function Grid({
               );
               if (itemType === 'hair') {
                 imgPath = getClothingImage(images, 'hair', 2, item.drawable, item.texture || 0, gender);
-              } else if (itemType === 'eye_color' || isPedModel || isTattoo || isOverlay) {
+              } else if (isOverlay) {
+                imgPath = getClothingImage(
+                  images,
+                  'overlay',
+                  item.overlayKey || itemId,
+                  item.drawable,
+                  0,
+                  gender
+                );
+              } else if (itemType === 'eye_color' || isPedModel || isTattoo) {
                 imgPath = './files/faces/SKEL_ROOT.000.webp';
               }
 
@@ -538,14 +547,20 @@ export default function Grid({
                           {item.collection || 'Tattoo'}
                         </span>
                       </div>
-                    ) : (
+                    ) : imgPath ? (
                       <img 
                         src={imgPath} 
-                        onError={(e) => { 
-                          e.currentTarget.src = './files/faces/SKEL_ROOT.000.webp'; 
-                          e.currentTarget.className = "w-12 h-12 opacity-25 grayscale"; 
+                        onError={(e) => {
+                          e.currentTarget.src = './files/faces/SKEL_ROOT.000.webp'
+                          e.currentTarget.className = "w-12 h-12 opacity-25 grayscale"
                         }}
                         className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      <img
+                        src="./files/faces/SKEL_ROOT.000.webp"
+                        className="w-12 h-12 opacity-25 grayscale"
+                        alt=""
                       />
                     )}
                   </div>

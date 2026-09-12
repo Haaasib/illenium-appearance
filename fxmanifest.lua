@@ -39,6 +39,7 @@ client_scripts {
   "client/blips.lua",
   "client/props.lua",
   "client/client.lua",
+  "autoshot/client.lua",
 }
 
 server_scripts {
@@ -61,7 +62,8 @@ server_scripts {
   "server/framework/ox/main.lua",
   "server/util.lua",
   "server/server.lua",
-  "server/permissions.lua"
+  "server/permissions.lua",
+  "autoshot/server.js"
 }
 
 shared_scripts {
@@ -86,7 +88,8 @@ shared_scripts {
   "locales/pt-BR.lua",
   "locales/ro-RO.lua",
   "locales/id.lua",
-  "@ox_lib/init.lua"
+  "@ox_lib/init.lua",
+  "autoshot/Customize.lua"
 }
 
 files {
@@ -99,3 +102,9 @@ files {
 }
 
 ui_page "web/dist/index.html"
+
+dependencies {
+  "ox_lib",
+  "screenshot-basic",
+  "yarn"
+}

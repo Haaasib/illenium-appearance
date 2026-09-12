@@ -93,6 +93,7 @@ export const EventListener = () => {
   });
 
   window.addEventListener('keydown', e => {
+    if (document.documentElement.dataset.capture === '1') return;
     if (e.key === 'd') {
       Nui.post('rotate_right');
     } else if (e.key === 'a') {

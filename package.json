@@ -1,0 +1,7 @@
+{
+  "name": "illenium-appearance",
+  "private": true,
+  "dependencies": {
+    "pngjs": "^7.0.0"
+  }
+}

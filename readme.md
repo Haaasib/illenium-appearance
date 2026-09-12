@@ -1,7 +1,8 @@
 # 🌟 NoPixel Inspired Clothing (`illenium-appearance`)
 
 Modern FiveM clothing & player customization menu inspired by **NoPixel**.  
-Redesign by **Haaasib**. Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!
+Redesign by **Haaasib**. Full credit to **iLLeniumStudios** for the base `illenium-appearance` script!  
+`/capturecloth` is based on **[uz_AutoShot](https://github.com/uz-scripts/uz_AutoShot)** by **uz-scripts**.
 
 ---
 
@@ -9,12 +10,11 @@ Redesign by **Haaasib**. Full credit to **iLLeniumStudios** for the base `illeni
 
 ![Apparel](preview/apparel.png)
 ![Tops](preview/tops.png)
-![Outfits](preview/outfit.png)
+![Shoes](preview/shoes.png)
 ![Hair](preview/hair.png)
-![Nose](preview/nose.png)
-![Face Blend](preview/face-blend.png)
-![Ped Models](preview/ped-models.png)
-![Tattoos](preview/tatto.png)
+![Face & Body](preview/face%26body.png)
+![Head Blend](preview/headblend.png)
+![Capture Cloth](preview/capturecloth.png)
 
 ---
 
@@ -33,9 +33,33 @@ ensure illenium-appearance
 
 ---
 
-## 💬 Links & Support
+## Clothing images
+
+`UseCdn = true` — ShortByte vanilla pack  
+`UseCdn = false` — your own captures
+
+Custom setup:
+1. `UseCdn = false`
+2. Paste Fivemanage `ApiKey` (leave `BaseUrl` empty)
+3. `ensure screenshot-basic` then `ensure illenium-appearance`
+4. In-game: `/capturecloth` — first upload fills `BaseUrl` in config
+
+```lua
+Config.ClothingImages = {
+    UseCdn = false,
+    Fivemanage = {
+        ApiKey = "YOUR_KEY",
+        BaseUrl = "",
+    },
+}
+```
+
+---
+
+## Links & Support
 
 - 💬 **Discord Support**: [https://discord.gg/kj3bWdD7uK](https://discord.gg/kj3bWdD7uK)
 - 🛒 **Store**: [https://tebex.haaasib.dev/](https://tebex.haaasib.dev/)
 - 📦 **GitHub Repository**: [https://github.com/Haaasib/illenium-appearance](https://github.com/Haaasib/illenium-appearance)
 - 📦 **Base Script**: [iLLeniumStudios Base](https://github.com/iLLeniumStudios/illenium-appearance)
+- 📸 **Capture Cloth**: [uz_AutoShot](https://github.com/uz-scripts/uz_AutoShot) by uz-scripts

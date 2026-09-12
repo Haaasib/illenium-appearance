@@ -53,7 +53,9 @@ export const KeyAssets = {
   d: `${KEYBINDS}/keyboard_d.png`,
   q: `${KEYBINDS}/keyboard_q.png`,
   e: `${KEYBINDS}/keyboard_e.png`,
+  p: `${KEYBINDS}/keyboard_p.png`,
   esc: `${KEYBINDS}/keyboard_escape.png`,
+  space: `${KEYBINDS}/keyboard_space.png`,
   tab: `${KEYBINDS}/keyboard_tab.png`,
   mouse: `${KEYBINDS}/mouse_scroll_outline.png`,
 };

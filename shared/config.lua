@@ -54,18 +54,22 @@ Config.ClothingPrices = {
     }
 }
 
+-- UseCdn true = ShortByte vanilla pack | false = custom Fivemanage
+-- Custom: UseCdn false, paste ApiKey only, /capturecloth (BaseUrl auto on first upload)
 Config.ClothingImages = {
-    BaseUrl = "", -- Optional custom CDN root. Empty uses the default GTA5-Cloth-Assets CDN.
-    Components = {
-        -- [componentId] = url, or [componentId] = { [drawable] = url }, or { [drawable] = { [texture] = url } }
-        -- [11] = { [5] = "https://example.com/tops/5.webp", [12] = { [0] = "https://example.com/tops/12_0.webp" } },
+    UseCdn = true,
+    Fivemanage = {
+        ApiKey = "",
+        BaseUrl = "",
     },
-    Props = {
-        -- [0] = { [1] = "https://example.com/hats/1.webp" },
-    },
-    Hair = {
-        -- [0] = "https://example.com/hair/0.webp",
-    }
+}
+
+Config.CaptureCloth = {
+    Enabled = true,
+    Command = "capturecloth",
+    WaitAfterApply = 120,
+    WaitAfterCapture = 40,
+    TextureLoadWait = 120,
 }
 
 -- Only set this to true if you're using rcore_tattoos

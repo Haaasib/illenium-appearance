@@ -1,3 +1,5 @@
+local DEFAULT_FM_PATH = 'illenium-appearance/clothing'
+
 local function getComponentConfig()
     return {
         masks = not Config.DisableComponents.Masks,
@@ -24,6 +26,12 @@ local function getPropConfig()
 end
 
 function GetDefaultConfig()
+    local images = Config.ClothingImages or {}
+    local fm = images.Fivemanage or {}
+    local baseUrl = ''
+    if type(fm.BaseUrl) == 'string' then
+        baseUrl = fm.BaseUrl:gsub('/+$', '')
+    end
     return {
         ped = false,
         headBlend = false,
@@ -39,6 +47,13 @@ function GetDefaultConfig()
         automaticFade = Config.AutomaticFade,
         isFree = false,
         prices = Config.ClothingPrices,
-        images = Config.ClothingImages
+        images = {
+            UseCdn = images.UseCdn == true,
+            BaseUrl = baseUrl,
+            Path = (type(fm.Path) == 'string' and fm.Path ~= '' and fm.Path) or DEFAULT_FM_PATH,
+            Components = images.Components,
+            Props = images.Props,
+            Hair = images.Hair,
+        }
     }
 end

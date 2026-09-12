@@ -388,10 +388,10 @@ export default function CustomizationPanel({
               >
                 <div className="flex-1 w-full flex items-center justify-center overflow-hidden p-1">
                   <img
-                    src={imgSrc}
+                    src={imgSrc || './files/faces/SKEL_ROOT.000.webp'}
                     onError={(e) => {
-                      e.currentTarget.src = './files/faces/SKEL_ROOT.000.webp';
-                      e.currentTarget.className = 'w-10 h-10 opacity-20 grayscale';
+                      e.currentTarget.src = './files/faces/SKEL_ROOT.000.webp'
+                      e.currentTarget.className = 'w-10 h-10 opacity-20 grayscale'
                     }}
                     className="w-full h-full object-contain"
                   />

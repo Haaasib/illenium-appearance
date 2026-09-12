@@ -1,5 +1,7 @@
 node_modules
 web/node_modules
+.yarn.installed
+tools/_cloth_tmp
 .DS_Store
 .vscode
 .idea

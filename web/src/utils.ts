@@ -17,7 +17,9 @@ export type ClothingPrices = {
 };
 
 export type ClothingImages = {
+  UseCdn?: boolean;
   BaseUrl?: string;
+  Path?: string;
   Components?: Record<string, string | Record<string, string | Record<string, string>>>;
   Props?: Record<string, string | Record<string, string | Record<string, string>>>;
   Hair?: Record<string, string>;
@@ -96,6 +98,44 @@ export const getItemPrice = (
 };
 
 const DEFAULT_CDN = 'https://cdn.jsdelivr.net/gh/ShortByte/GTA5-Cloth-Assets/assets';
+const CDN_NO_GENDER: Record<number, boolean> = { 1: true, 5: true };
+
+const COMPONENT_FOLDERS: Record<number, string> = {
+  1: 'masks',
+  2: 'hair',
+  3: 'torsos',
+  4: 'legs',
+  5: 'bags',
+  6: 'shoes',
+  7: 'accessories',
+  8: 'undershirts',
+  9: 'bodyarmors',
+  10: 'decals',
+  11: 'tops',
+};
+
+const PROP_FOLDERS: Record<number, string> = {
+  0: 'hats',
+  1: 'glasses',
+  2: 'ears',
+  6: 'watches',
+  7: 'bracelets',
+};
+
+const OVERLAY_FOLDERS: Record<string, string> = {
+  blemishes: 'blemishes',
+  beard: 'beards',
+  eyebrows: 'eyebrows',
+  ageing: 'ageing',
+  makeUp: 'makeup',
+  blush: 'blush',
+  complexion: 'complexion',
+  sunDamage: 'sun_damage',
+  lipstick: 'lipstick',
+  moleAndFreckles: 'moles',
+  chestHair: 'chest_hair',
+  bodyBlemishes: 'body_blemishes',
+};
 
 const lookupImage = (table: any, ...keys: Array<string | number>): string | undefined => {
   let current = table;
@@ -107,45 +147,42 @@ const lookupImage = (table: any, ...keys: Array<string | number>): string | unde
   return typeof current === 'string' && current !== '' ? current : undefined;
 };
 
-export const getCdnUrl = (type: 'component' | 'prop', id: number, drawable: number, texture: number, gender: 'male' | 'female' = 'male') => {
-  const componentMap: Record<number, { name: string, hasGender: boolean }> = {
-    0: { name: 'head', hasGender: true },
-    1: { name: 'masks', hasGender: false },
-    2: { name: 'hair', hasGender: true },
-    3: { name: 'torsos', hasGender: true },
-    4: { name: 'legs', hasGender: true },
-    5: { name: 'bags', hasGender: false },
-    6: { name: 'shoes', hasGender: true },
-    7: { name: 'accessories', hasGender: true },
-    8: { name: 'undershirts', hasGender: true },
-    9: { name: 'bodyarmors', hasGender: true },
-    10: { name: 'decals', hasGender: true },
-    11: { name: 'tops', hasGender: true }
-  };
+const getCdnUrl = (
+  type: 'component' | 'prop',
+  id: number,
+  drawable: number,
+  texture: number,
+  gender: 'male' | 'female',
+) => {
+  const folder = type === 'prop' ? PROP_FOLDERS[id] : COMPONENT_FOLDERS[id];
+  if (!folder) return '';
+  const genderPath = (type === 'component' && CDN_NO_GENDER[id]) ? '' : `/${gender}`;
+  return `${DEFAULT_CDN}/${folder}${genderPath}/${drawable}/${texture}.webp`;
+};
 
-  const propMap: Record<number, { name: string, hasGender: boolean }> = {
-    0: { name: 'hats', hasGender: true },
-    1: { name: 'glasses', hasGender: true },
-    2: { name: 'ears', hasGender: true },
-    6: { name: 'watches', hasGender: true },
-    7: { name: 'bracelets', hasGender: true }
-  };
-
-  const map = type === 'component' ? componentMap : propMap;
-  const category = map[id];
-
-  if (!category) {
-    return './files/faces/SKEL_ROOT.000.webp';
-  }
-
-  const genderPath = category.hasGender ? `/${gender}` : '';
-  return `${DEFAULT_CDN}/${category.name}${genderPath}/${drawable}/${texture}.webp`;
+const getCustomUrl = (
+  images: ClothingImages | undefined,
+  type: 'component' | 'prop' | 'overlay',
+  id: number | string,
+  drawable: number,
+  texture: number,
+  gender: 'male' | 'female',
+) => {
+  const base = (images?.BaseUrl || '').replace(/\/$/, '');
+  if (!base) return '';
+  const root = (images?.Path || 'illenium-appearance/clothing').replace(/^\/+|\/+$/g, '');
+  let folder: string;
+  if (type === 'overlay') folder = OVERLAY_FOLDERS[String(id)] || String(id);
+  else if (type === 'prop') folder = PROP_FOLDERS[id as number] || `prop_${id}`;
+  else folder = COMPONENT_FOLDERS[id as number] || String(id);
+  const stem = texture > 0 ? `${drawable}_${texture}` : String(drawable);
+  return `${base}/${root}/${gender}/${folder}/${stem}.png`;
 };
 
 export const getClothingImage = (
   images: ClothingImages | undefined,
-  type: 'component' | 'prop' | 'hair',
-  id: number,
+  type: 'component' | 'prop' | 'hair' | 'overlay',
+  id: number | string,
   drawable: number,
   texture: number,
   gender: 'male' | 'female' = 'male',
@@ -155,14 +192,16 @@ export const getClothingImage = (
     if (hairUrl) return hairUrl;
     return getClothingImage(images, 'component', 2, drawable, texture, gender);
   }
-  const map = type === 'prop' ? images?.Props : images?.Components;
-  const override = lookupImage(map, id, drawable, texture) || lookupImage(map, id, drawable) || lookupImage(map, id);
-  if (override) return override;
-  const cdnUrl = getCdnUrl(type, id, drawable, texture, gender);
-  if (images?.BaseUrl) {
-    return cdnUrl.replace(DEFAULT_CDN, images.BaseUrl.replace(/\/$/, ''));
+  if (type !== 'overlay') {
+    const map = type === 'prop' ? images?.Props : images?.Components;
+    const override = lookupImage(map, id, drawable, texture) || lookupImage(map, id, drawable) || lookupImage(map, id);
+    if (override) return override;
   }
-  return cdnUrl;
+  if (images?.UseCdn) {
+    if (type === 'overlay') return '';
+    return getCdnUrl(type, id as number, drawable, texture, gender);
+  }
+  return getCustomUrl(images, type === 'overlay' ? 'overlay' : type, id, drawable, texture, gender);
 };
 
 const DOCS = "https://docs.fivem.net";
